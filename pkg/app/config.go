@@ -30,7 +30,7 @@ func addConfigFlag(basename string, fs *pflag.FlagSet) {
 
 	viper.AutomaticEnv()
 	// viper.SetEnvPrefix(strings.Replace(strings.ToUpper(basename), "-", "_", -1))
-	viper.SetEnvPrefix("ENV")
+	viper.SetEnvPrefix("ENV_GO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
 	cobra.OnInitialize(func() {

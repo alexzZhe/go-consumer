@@ -7,6 +7,7 @@ import (
 	"example.com/demo/pkg/log"
 	"github.com/ThreeDotsLabs/watermill-amqp/v2/pkg/amqp"
 	"github.com/ThreeDotsLabs/watermill/message"
+	amqpgo "github.com/rabbitmq/amqp091-go"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -15,12 +16,17 @@ type RabbitMQConfig struct {
 	ChannelPoolSize int    `json:"channel_pool_size"  mapstructure:"channel_pool_size"`
 	ConfirmDelivery bool   `json:"confirm_delivery"   mapstructure:"confirm_delivery"`
 	ExchangeName    string `json:"exchange_name"      mapstructure:"exchange_name"`
+	ExchangeType    string `json:"exchange_type"      mapstructure:"exchange_type"`
 }
 
 type RabbitMQ struct {
 	// config     *RabbitMQConfig
 	conn       *amqp.ConnectionWrapper
 	amqpConfig amqp.Config
+}
+
+type customizeMarshaler struct {
+	amqp.DefaultMarshaler
 }
 
 var (
@@ -34,7 +40,16 @@ func NewRabbitMQConfig() *RabbitMQConfig {
 		ChannelPoolSize: 1,
 		ConfirmDelivery: true,
 		ExchangeName:    "",
+		ExchangeType:    "",
 	}
+}
+
+func (d customizeMarshaler) Unmarshal(amqpMsg amqpgo.Delivery) (*message.Message, error) {
+
+	msg := message.NewMessage("", amqpMsg.Body)
+	msg.Metadata = make(message.Metadata, len(amqpMsg.Headers)-1) // headers - minus uuid
+
+	return msg, nil
 }
 
 func newDurableRoutingConfig(cfg *RabbitMQConfig) amqp.Config {
@@ -43,13 +58,13 @@ func newDurableRoutingConfig(cfg *RabbitMQConfig) amqp.Config {
 			AmqpURI: cfg.AmqpURI,
 		},
 
-		Marshaler: amqp.DefaultMarshaler{},
+		Marshaler: customizeMarshaler{}, //amqp.DefaultMarshaler{},
 
 		Exchange: amqp.ExchangeConfig{
 			GenerateName: func(topic string) string {
 				return cfg.ExchangeName
 			},
-			Type:    "direct",
+			Type:    cfg.ExchangeType,
 			Durable: true,
 		},
 		Queue: amqp.QueueConfig{
@@ -127,7 +142,7 @@ func (mq *RabbitMQ) ConsumeMessage(ctx context.Context, c Consumer, callback fun
 	}
 
 	for msg := range messages {
-		// log.Infof("received message: %s, payload: %s\n", msg.UUID, string(msg.Payload))
+		log.Infof("received message: %s, payload: %s\n", msg.UUID, string(msg.Payload))
 		if callback([]byte(msg.Payload)) {
 			msg.Ack()
 		}

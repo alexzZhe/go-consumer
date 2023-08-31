@@ -6,4 +6,5 @@ func init() {
 	availableProcessors = make(map[string]Processor)
 
 	availableProcessors["http"] = &HTTPProcessor{}
+	availableProcessors["dummy"] = &DummyProcessor{}
 }

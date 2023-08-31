@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -27,6 +28,7 @@ var rabbitmqCfg = &mq.RabbitMQConfig{
 	ChannelPoolSize: 10,
 	ConfirmDelivery: true,
 	ExchangeName:    "demo",
+	ExchangeType:    "direct",
 }
 
 var redisConfig = &storage.Config{
@@ -73,7 +75,7 @@ func main() {
 	// listTopic()
 	// return
 
-	// Consume(4)
+	// Consume(1)
 	// return
 
 	client := getClient()
@@ -117,7 +119,7 @@ func main() {
 			// }
 			client := getClient()
 			for j := 0; j < 1; j++ {
-				SendMessage(client, j)
+				SendMessage(client, i)
 			}
 
 		}(i)
@@ -149,9 +151,10 @@ func getClient() mq.MQ {
 }
 
 func SendMessage(pub mq.MQ, i int) {
+	c, _ := json.Marshal(map[string]string{"key": fmt.Sprintf("key%d", i), "content": fmt.Sprintf("Content%d", i)})
 	msg := mq.Message{
 		Key:     fmt.Sprintf("key%d", i),
-		Content: "Content",
+		Content: string(c),
 	}
 	pub.SendMessage(context.Background(), topicName, &msg)
 }
@@ -201,7 +204,7 @@ func Consume(num int) {
 }
 
 func callback(msg interface{}) bool {
-	log.Infof("callback: %s", msg.(string))
+	log.Infof("callback: %s", msg.([]byte))
 	return true
 }
 

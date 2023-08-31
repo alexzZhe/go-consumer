@@ -23,6 +23,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19
 	github.com/panjf2000/ants/v2 v2.8.1
 	github.com/pkg/errors v0.9.1
+	github.com/rabbitmq/amqp091-go v1.2.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/kafka-go v0.4.42
 	github.com/sirupsen/logrus v1.9.3
@@ -92,7 +93,6 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
-	github.com/rabbitmq/amqp091-go v1.2.0 // indirect
 	github.com/rivo/uniseg v0.1.0 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.1 // indirect

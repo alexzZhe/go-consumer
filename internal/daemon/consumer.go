@@ -122,7 +122,7 @@ func (c *Consumer) newMQClient() []mq.MQ {
 func (c *Consumer) newProcessor() []process.Processor {
 	processors := make([]process.Processor, c.consumerConfig.ConsumerNum)
 
-	pOpts := &process.Options{HTTPOptions: []process.HTTPOptions{process.WithHTTPHost(c.processCfg.Host), process.WithHTTPTimeout(5), process.WithEndpoint(c.consumerConfig.URLPath)}}
+	pOpts := &process.Options{HTTPOptions: []process.HTTPOptions{process.WithHTTPHost(c.processCfg.Host), process.WithHTTPTimeout(60), process.WithEndpoint(c.consumerConfig.URLPath)}}
 	processorType := c.consumerConfig.Processor
 	if c.consumerConfig.Processor == process.DefaultProcessorType {
 		processorType = c.config.ProcessorDefault

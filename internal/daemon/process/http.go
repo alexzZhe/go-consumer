@@ -27,7 +27,7 @@ func (p *HTTPProcessor) Init(opts *Options) {
 	}
 
 	t := time.Duration(p.timeout) * time.Second
-	p.client = gohttpclient.New(p.host, gohttpclient.WithTimeout(t))
+	p.client = gohttpclient.New(p.host, gohttpclient.WithTimeout(t), gohttpclient.WithDefaultHeaders())
 }
 
 func WithHTTPHost(host string) HTTPOptions {
@@ -55,9 +55,9 @@ func (p *HTTPProcessor) Handle(v any) error {
 		return err
 	}
 	if !resp.Ok() {
-		log.Errorf("Response: %v %s", resp.Status(), resp.Body())
+		log.Errorf("Response: %v %s %s", resp.Status(), p.endpoint, resp.Body())
 	} else {
-		log.Infof("Response: %v %s", resp.Status(), resp.Body())
+		log.Infof("Response: %v %s %s", resp.Status(), p.endpoint, resp.Body())
 	}
 
 	return nil

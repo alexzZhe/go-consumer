@@ -35,6 +35,7 @@ rabbitmq:
   channel_pool_size: 10 # 连接channel的数量
   confirm_delivery: true # 是否保证消息到达
   exchange_name: "demo" # exchange
+  exchange_type: "direct" # direct/x-delayed-message
 
 # Kafka配置
 kafka:
@@ -62,23 +63,36 @@ log:
     error-output-paths: ./daemon.error.log # zap内部(非业务)错误日志输出路径，多个输出，逗号分开
 
 
+# 支持RabbitMQ\AliyunMNS\Kafka\Redis
 mq-default: Kafka
-message-process-host: http://0.0.0.0:8080
+# 处理消息请求API
+message-process-host: http://0.0.0.0
+# 处理消息默认请求服务
 processor-default: http
+# 消费组，根据不同集群设置
 consumer-groups: COMMON,COMMON_DISTRIBUTE,BKK_DISTRIBUTE
 
 mq-consumer:
-  DistributeTasker:
+  Test:
+    group: COMMON # 消费组，会过滤不在consumer-groups的
+    queue-name: test-queue # 队列名、topic名
+    group-id:  # Kafka消费组
+    consumer-num: 1 # 连接mq出队的goroutine数量
+    message-processor-num: 5 # 消费消息的goroutine数量
+    mq-server: Redis # mq类型，值为 default 时使用mq-default配置，支持RabbitMQ\AliyunMNS\Kafka\Redis
+    processor: dummy # 消息处理类型，值为 default 时使用processor-default配置，测试可以使用dummy
+    url-path: /Test # 消息处理请求URL
+  Test2:
     group: COMMON_DISTRIBUTE
     queue-name: topic-C
     group-id: consumer-group-id
     consumer-num: 4
     message-processor-num: 20
     mq-server: default
-    processor: default
+    processor: dummy
     url-path: /test3
-  OrderDistribute:
-    group: BKK_DISTRIBUTE
+  Test3:
+    group: BKK_DISTRIBUTE_
     queue-name: topic-C
     group-id: 
     consumer-num: 1
@@ -86,8 +100,8 @@ mq-consumer:
     mq-server: Redis
     processor: default
     url-path: /test2
-  OrderOpenRobDistribute:
-    group: BKK_DISTRIBUTE
+  Test4:
+    group: BKK_DISTRIBUTE_
     queue-name: topic-C
     group-id: 
     consumer-num: 4
