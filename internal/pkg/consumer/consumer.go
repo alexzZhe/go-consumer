@@ -1,4 +1,4 @@
-package daemon
+package consumer
 
 import (
 	"context"
@@ -6,23 +6,16 @@ import (
 	"sync"
 	"time"
 
-	"example.com/demo/internal/daemon/config"
-	"example.com/demo/internal/daemon/options"
-	"example.com/demo/internal/daemon/process"
 	"example.com/demo/internal/pkg/client"
+	"example.com/demo/internal/pkg/consumer/process"
+	"example.com/demo/internal/pkg/options"
 	"example.com/demo/pkg/log"
 	"example.com/demo/pkg/mq"
 	"github.com/panjf2000/ants/v2"
 )
 
-type ProcessConfig struct {
-	Host string
-}
-
 type Consumer struct {
-	ctx            context.Context
-	config         *config.Config
-	processCfg     *ProcessConfig
+	processCfg     *process.ProcessConfig
 	processPool    *ants.Pool
 	consumerConfig options.MQConsumerConfig
 }
@@ -31,17 +24,8 @@ const (
 	defaultMQ = "default"
 )
 
-func NewProcessConfig(cfg *config.Config) *ProcessConfig {
-	processCfg := &ProcessConfig{
-		Host: cfg.MessageProcessHost,
-	}
-
-	return processCfg
-}
-
-func NewConsumer(ctx context.Context, cfg *config.Config) *Consumer {
-	processCfg := NewProcessConfig(cfg)
-	return &Consumer{ctx: ctx, config: cfg, processCfg: processCfg}
+func New(processCfg *process.ProcessConfig) *Consumer {
+	return &Consumer{processCfg: processCfg}
 }
 
 func (c *Consumer) Init(opt options.MQConsumerConfig) {
@@ -56,7 +40,7 @@ func (c *Consumer) Init(opt options.MQConsumerConfig) {
 }
 
 // 消费队列
-func (c *Consumer) Start(wg *sync.WaitGroup) {
+func (c *Consumer) Start(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	queueName := c.queueName(c.consumerConfig.QueueName)
@@ -77,7 +61,7 @@ func (c *Consumer) Start(wg *sync.WaitGroup) {
 
 			processor := processors[index]
 			client := mqClients[index]
-			client.ConsumeMessage(c.ctx, consumer, func(msg interface{}) bool {
+			client.ConsumeMessage(ctx, consumer, func(msg interface{}) bool {
 				c.processPool.Submit(func() {
 					// 这里处理消息
 					// log.Infof("process msg %v", msg)
@@ -91,7 +75,7 @@ func (c *Consumer) Start(wg *sync.WaitGroup) {
 		}(i)
 	}
 
-	<-c.ctx.Done()
+	<-ctx.Done()
 	// 关闭mq连接
 	for _, v := range mqClients {
 		v.Close()
@@ -106,7 +90,7 @@ func (c *Consumer) newMQClient() []mq.MQ {
 	clients := make([]mq.MQ, c.consumerConfig.ConsumerNum)
 	server := c.consumerConfig.MQServer
 	if server == defaultMQ {
-		server = c.config.MQDefault
+		server = c.processCfg.MQDefault
 	}
 
 	for i := 0; i < c.consumerConfig.ConsumerNum; i++ {
@@ -122,10 +106,13 @@ func (c *Consumer) newMQClient() []mq.MQ {
 func (c *Consumer) newProcessor() []process.Processor {
 	processors := make([]process.Processor, c.consumerConfig.ConsumerNum)
 
-	pOpts := &process.Options{HTTPOptions: []process.HTTPOptions{process.WithHTTPHost(c.processCfg.Host), process.WithHTTPTimeout(60), process.WithEndpoint(c.consumerConfig.URLPath)}}
+	pOpts := &process.Options{
+		HTTPOptions: []process.HTTPOptions{process.WithHTTPHost(c.processCfg.Host), process.WithHTTPTimeout(60), process.WithEndpoint(c.consumerConfig.Path)},
+		Path:        c.consumerConfig.Path,
+	}
 	processorType := c.consumerConfig.Processor
 	if c.consumerConfig.Processor == process.DefaultProcessorType {
-		processorType = c.config.ProcessorDefault
+		processorType = c.processCfg.ProcessorDefault
 	}
 	for i := 0; i < c.consumerConfig.ConsumerNum; i++ {
 		processor, err := process.GetProcessor(processorType)
@@ -140,8 +127,8 @@ func (c *Consumer) newProcessor() []process.Processor {
 }
 
 func (c *Consumer) queueName(name string) string {
-	if c.config.AppMode != "" {
-		return fmt.Sprintf("%s-%s%s", name, c.config.AppMode, c.config.QueueRegion)
+	if c.processCfg.AppMode != "" {
+		return fmt.Sprintf("%s-%s%s", name, c.processCfg.AppMode, c.processCfg.QueueRegion)
 	}
 
 	return name

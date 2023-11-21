@@ -142,7 +142,7 @@ func (mq *RabbitMQ) ConsumeMessage(ctx context.Context, c Consumer, callback fun
 	}
 
 	for msg := range messages {
-		log.Infof("received message: %s, payload: %s\n", msg.UUID, string(msg.Payload))
+		log.Infof("received message: %s, payload: %s", msg.UUID, string(msg.Payload))
 		if callback([]byte(msg.Payload)) {
 			msg.Ack()
 		}

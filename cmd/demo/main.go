@@ -20,8 +20,9 @@ var kafkaCfg = &mq.KafkaConf{
 }
 var kafkaClient = mq.NewKafkaMQ(kafkaCfg)
 
-// var topicName = "test-queue"
-var topicName = "topic-C"
+var topicName = "test-queue"
+
+// var topicName = "topic-C"
 
 var rabbitmqCfg = &mq.RabbitMQConfig{
 	AmqpURI:         "amqp://guest:guest@localhost:5672/",
@@ -62,7 +63,7 @@ const (
 	mnsType      = "mns"
 )
 
-var clientType = rabbitmqType
+var clientType = redisType
 
 func main() {
 

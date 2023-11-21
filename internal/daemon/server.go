@@ -3,11 +3,11 @@ package daemon
 import (
 	"context"
 	"strings"
-	"sync"
 
 	"example.com/demo/pkg/log"
 
 	"example.com/demo/internal/daemon/config"
+	"example.com/demo/internal/daemon/consume"
 	"example.com/demo/internal/pkg/client"
 
 	"example.com/demo/pkg/shutdown"
@@ -74,39 +74,42 @@ func (s preparedDaemonServer) Run() error {
 	}
 
 	// 开始 daemon 出队
-	s.start()
+	// s.start()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.consumerStopFunc = cancel
+	consume.Run(ctx, s.config)
 
 	// blocking here via channel to prevents the process exit.
 	<-stopCh
 	return nil
 }
 
-func (s *daemonServer) start() {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.consumerStopFunc = cancel
-	var wg sync.WaitGroup
+// func (s *daemonServer) start() {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	s.consumerStopFunc = cancel
+// 	var wg sync.WaitGroup
 
-	for key, consumeConfig := range s.config.MQConsumer {
-		if !s.filterConsumerGroup(consumeConfig.Group) {
-			continue
-		}
-		wg.Add(1)
-		log.Infof("daemon start consumer: %s %+v", key, consumeConfig)
+// 	for key, consumeConfig := range s.config.MQConsumer {
+// 		if !s.filterConsumerGroup(consumeConfig.Group) {
+// 			continue
+// 		}
+// 		wg.Add(1)
+// 		log.Infof("daemon start consumer: %s %+v", key, consumeConfig)
 
-		consumer := NewConsumer(ctx, s.config)
-		consumer.Init(consumeConfig)
-		go consumer.Start(&wg)
-	}
+// 		consumer := NewConsumer(ctx, s.config)
+// 		consumer.Init(consumeConfig)
+// 		go consumer.Start(&wg)
+// 	}
 
-	wg.Wait()
-}
+// 	wg.Wait()
+// }
 
-func (s *daemonServer) filterConsumerGroup(group string) bool {
-	for _, v := range s.consumerGroups {
-		if v == group {
-			return true
-		}
-	}
+// func (s *daemonServer) filterConsumerGroup(group string) bool {
+// 	for _, v := range s.consumerGroups {
+// 		if v == group {
+// 			return true
+// 		}
+// 	}
 
-	return false
-}
+// 	return false
+// }

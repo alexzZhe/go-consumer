@@ -198,7 +198,7 @@ func (mq *KafkaMQ) ConsumeMessage(ctx context.Context, c Consumer, callback func
 				log.Infof("ReadMessage : %v", err)
 				break
 			}
-			log.Infof("AutoAck message at topic/partition/offset %v/%v/%v: %s = %s id:%s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value), id)
+			log.Infof("AutoAck message at topic/partition/offset %v/%v/%v: %s = %s id:%s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value), id)
 			callback(m.Value)
 		}
 	} else {
@@ -209,7 +209,7 @@ func (mq *KafkaMQ) ConsumeMessage(ctx context.Context, c Consumer, callback func
 				log.Infof("FetchMessage : %v", err)
 				break
 			}
-			log.Infof("message at topic/partition/offset %v/%v/%v: %s = %s id:%s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value), id)
+			log.Infof("message at topic/partition/offset %v/%v/%v: %s = %s id:%s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value), id)
 			callback(m.Value)
 			if err := kafkaReader.CommitMessages(ctx, m); err != nil {
 				log.Errorf("failed to commit messages: %v", err)

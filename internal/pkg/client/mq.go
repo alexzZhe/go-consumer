@@ -1,6 +1,8 @@
 package client
 
 import (
+	"context"
+	"fmt"
 	"sync"
 
 	genericoptions "example.com/demo/internal/pkg/options"
@@ -9,11 +11,19 @@ import (
 	"example.com/demo/pkg/storage"
 )
 
+const (
+	// DefaultMQServer is the default message queue server.
+	DefaultMQ = "default"
+)
+
 type MQClient struct {
 	redisConfig     *storage.Config
 	aliyunMNSConfig *mq.MNSConfig
 	kafkaConfig     *mq.KafkaConf
 	rabbitMQConfig  *mq.RabbitMQConfig
+	defaultMQServer string
+	AppMode         string
+	QueueRegion     string
 }
 
 type MQOptions func(*MQClient)
@@ -33,6 +43,10 @@ var (
 
 func CreateMQ(server string) mq.MQ {
 	c := MQFactory
+	if server == DefaultMQ {
+		server = c.defaultMQServer
+	}
+
 	switch server {
 	case mq.AliyunMNSServer:
 		return mq.NewAliyunMNS(c.aliyunMNSConfig)
@@ -58,12 +72,50 @@ func CreateMQ(server string) mq.MQ {
 	return nil
 }
 
+func SendToQueue(queueName string, messages ...*mq.Message) error {
+
+	c := CreateMQ(DefaultMQ)
+
+	err := c.SendMessage(context.TODO(), queueNameFormat(queueName), messages...)
+	if err != nil {
+		log.Errorf("Failed to send message: %v", err)
+	}
+
+	return err
+}
+
+func queueNameFormat(name string) string {
+	if MQFactory.AppMode != "" {
+		return fmt.Sprintf("%s-%s%s", name, MQFactory.AppMode, MQFactory.QueueRegion)
+	}
+
+	return name
+}
+
 func InitMQOptions(opts ...MQOptions) {
 	c := MQFactory
 	for _, opt := range opts {
 		opt(c)
 	}
 	// return c
+}
+
+func WithDefaultMQ(server string) MQOptions {
+	return func(c *MQClient) {
+		c.defaultMQServer = server
+	}
+}
+
+func WithAppMode(appMode string) MQOptions {
+	return func(c *MQClient) {
+		c.AppMode = appMode
+	}
+}
+
+func WithQueueRegion(queueRegion string) MQOptions {
+	return func(c *MQClient) {
+		c.QueueRegion = queueRegion
+	}
 }
 
 func WithRedisConfig(config *genericoptions.RedisOptions) MQOptions {
