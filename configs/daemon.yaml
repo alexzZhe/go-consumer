@@ -70,7 +70,7 @@ message-process-host: http://0.0.0.0
 # 处理消息默认请求服务
 processor-default: http
 # 消费组，根据不同集群设置
-consumer-groups: COMMON,COMMON_DISTRIBUTE,BKK_DISTRIBUTE
+consumer-groups: COMMON,COMMON_GROUP1,COMMON_GROUP2
 
 mq-consumer:
   Test:
@@ -81,9 +81,9 @@ mq-consumer:
     message-processor-num: 5 # 消费消息的goroutine数量
     mq-server: Redis # mq类型，值为 default 时使用mq-default配置，支持RabbitMQ\AliyunMNS\Kafka\Redis
     processor: php # 消息处理类型，值为 default 时使用processor-default配置，测试可以使用dummy
-    path: /Users/alex/web/goprojects/demo/internal/pkg/php_caller/demo.php # 消息处理请求URL
+    path: demo.php # 消息处理请求URL
   Test2:
-    group: COMMON_DISTRIBUTE_
+    group: COMMON_GROUP3
     queue-name: topic-C
     group-id: consumer-group-id
     consumer-num: 4
@@ -92,7 +92,7 @@ mq-consumer:
     processor: dummy
     path: /test3
   Test3:
-    group: BKK_DISTRIBUTE_
+    group: COMMON_GROUP3
     queue-name: topic-C
     group-id: 
     consumer-num: 1
@@ -101,7 +101,7 @@ mq-consumer:
     processor: default
     path: /test2
   Test4:
-    group: BKK_DISTRIBUTE_
+    group: COMMON_GROUP3
     queue-name: topic-C
     group-id: 
     consumer-num: 4
